@@ -105,6 +105,10 @@ enum MarkdownLineStyle : LineStyling {
 @objc public protocol LineProperties {
 	var alignment : NSTextAlignment { get set }
     var lineSpacing: CGFloat { get set }
+    var lineHeightMultiple: CGFloat { get set }
+    var minimumLineHeight: CGFloat { get set }
+    var maximumLineHeight: CGFloat { get set }
+    var baselineOffset: CGFloat { get set }
     var paragraphSpacing: CGFloat { get set }
 }
 
@@ -136,6 +140,10 @@ If that is not set, then the system default will be used.
 	public var fontStyle : FontStyle = .normal
 	public var alignment: NSTextAlignment = .left
     public var lineSpacing : CGFloat = 0.0
+    public var lineHeightMultiple: CGFloat = 0.0
+    public var minimumLineHeight: CGFloat = .nan
+    public var maximumLineHeight: CGFloat = .nan
+    public var baselineOffset: CGFloat = 0.0
     public var paragraphSpacing : CGFloat = 0.0
 }
 
@@ -547,7 +555,23 @@ extension SwiftyMarkdown {
 			paragraphStyle.alignment = lineProperties.alignment
 		}
         paragraphStyle.lineSpacing = lineProperties.lineSpacing
+        paragraphStyle.lineHeightMultiple = lineProperties.lineHeightMultiple
+
+		if !lineProperties.minimumLineHeight.isNaN {
+			paragraphStyle.minimumLineHeight = lineProperties.minimumLineHeight
+		}
+		
+		if !lineProperties.maximumLineHeight.isNaN {
+			// There's a bug in iOS 13 and above when setting the `baselineOffset`. The bounding box of the text is calculated incorrectly when `maximumLineHeight` and `minimumLineHeight` are equal.
+			// Some details: https://stackoverflow.com/questions/21415963/nsattributedstring-superscript-styling/21603232#comment102844891_21603232
+			// https://stackoverflow.com/questions/58069302/how-to-fix-uilabel-text-spacing/58199208#58199208
+			let maximumLineHeight = lineProperties.minimumLineHeight != lineProperties.maximumLineHeight ? lineProperties.maximumLineHeight : lineProperties.maximumLineHeight - 0.0001
+
+			paragraphStyle.maximumLineHeight = maximumLineHeight
+		}
+
         paragraphStyle.paragraphSpacing = lineProperties.paragraphSpacing
+        attributes[.baselineOffset] = lineProperties.baselineOffset as AnyObject?
         attributes[.paragraphStyle] = paragraphStyle
 		
 		
